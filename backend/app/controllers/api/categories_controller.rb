@@ -12,6 +12,8 @@ class Api::CategoriesController < ApplicationController
     else
       render json: { errors: category.errors.full_messages }, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordNotUnique
+    render json: { errors: ["Category already exists"] }, status: :unprocessable_entity
   end
 
   private
