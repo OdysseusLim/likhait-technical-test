@@ -52,6 +52,9 @@ export function ExpenseForm({
     marginTop: "0.5rem",
   };
 
+  // BONUS-001: Get today's local date string formatted as YYYY-MM-DD
+  const todayStr = new Date().toISOString().split("T")[0];
+
   return (
     <form onSubmit={handleSubmit} style={formStyle}>
       <TextField
@@ -90,9 +93,19 @@ export function ExpenseForm({
       <TextField
         label="Date"
         type="date"
-        value={formData.date}
-        onChange={(e) => handleChange("date", e.target.value)}
+        value={formData.date || todayStr} 
+        onChange={(e) => {
+          const selectedDate = e.target.value;
+          handleChange("date", selectedDate);
+          
+          if (selectedDate > todayStr) {
+            errors.date = "Expense date cannot be in the future";
+          } else {
+            errors.date = undefined;
+          }
+        }}
         error={errors.date}
+        max={todayStr} 
         fullWidth
         required
       />
