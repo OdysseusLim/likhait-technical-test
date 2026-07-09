@@ -33,52 +33,59 @@ services:
       - expense_network
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: expense_system_backend
-    environment:
-      RAILS_ENV: development
-      DATABASE_HOST: db
-      DATABASE_PORT: 3306
-      DATABASE_NAME: expense_system_development
-      DATABASE_USERNAME: expense_user
-      DATABASE_PASSWORD: expense_password
-    ports:
-      - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./backend:/rails
-      - backend_gems:/usr/local/bundle
-    command: >
-      sh -c "
-        bundle install &&
-        rails db:migrate &&
-        rails db:seed &&
-        rails server -b 0.0.0.0
-      "
-    networks:
-      - expense_network
+      build:
+        context: ./backend
+        dockerfile: Dockerfile
+      container_name: expense_system_backend
+      environment:
+        RAILS_ENV: development
+        DATABASE_HOST: db
+        DATABASE_PORT: 3306
+        DATABASE_NAME: expense_system_development
+        DATABASE_USERNAME: expense_user
+        DATABASE_PASSWORD: expense_password
+      ports:
+        - "3000:3000"
+      depends_on:
+        db:
+          condition: service_healthy
+      volumes:
+        - ./backend:/rails
+        - backend_gems:/usr/local/bundle
+      entrypoint: []
+      command: >
+        bash -cl "
+          bundle install &&
+          bundle exec rails db:migrate &&
+          bundle exec rails db:seed || true &&
+          bundle exec rails server -b 0.0.0.0
+        "
+      networks:
+        - expense_network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: expense_system_frontend
-    environment:
-      VITE_API_URL: http://localhost:3000
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    command: npm run dev -- --host
-    networks:
-      - expense_network
+      build:
+        context: ./frontend
+        dockerfile: Dockerfile
+      container_name: expense_system_frontend
+      environment:
+        VITE_API_URL: http://localhost:3000
+      ports:
+        - "5173:5173"
+      depends_on:
+        - backend
+      volumes:
+        - ./frontend:/app
+        - frontend_node_modules:/app/node_modules
+      entrypoint: []
+      command: >
+        sh -c "
+          rm -rf node_modules/.vite &&
+          npm install --save-optional @rollup/rollup-linux-x64-musl &&
+          npm run dev -- --host
+        "
+      networks:
+        - expense_network
 
 volumes:
   mysql_data:
