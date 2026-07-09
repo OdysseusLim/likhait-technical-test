@@ -16,7 +16,11 @@ class Api::ExpensesController < ApplicationController
   end
 
   def create
-    expense = Expense.new(expense_params)
+    attrs = expense_params.to_h
+    attrs[:created_at] = attrs.delete(:date) if attrs[:date].present?
+    attrs[:payer_name] ||= "Default Payer"
+
+    expense = Expense.new(attrs)
 
     if expense.save
       render json: format_expense(expense), status: :created
@@ -28,7 +32,11 @@ class Api::ExpensesController < ApplicationController
   def update
     expense = Expense.find(params[:id])
 
-    if expense.update(expense_params)
+    attrs = expense_params.to_h
+    attrs[:created_at] = attrs.delete(:date) if attrs[:date].present?
+    attrs[:payer_name] ||= "Default Payer"
+
+    if expense.update(attrs)
       render json: format_expense(expense)
     else
       render json: { errors: expense.errors.full_messages }, status: :unprocessable_entity
