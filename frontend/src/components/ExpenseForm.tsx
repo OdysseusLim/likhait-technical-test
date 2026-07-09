@@ -4,9 +4,10 @@
 
 import React from "react";
 import { ExpenseFormData } from "../types";
-import { EXPENSE_CATEGORIES } from "../constants/categories";
 import { TextField, SelectBox, Button } from "../vibes";
 import { useExpenseForm } from "../hooks/useExpenseForm";
+import { useCategories } from "../hooks/useCategories";
+import { AddCategoryModal } from "./AddCategoryModal";
 
 interface ExpenseFormProps {
   initialData?: Partial<ExpenseFormData>;
@@ -27,6 +28,18 @@ export function ExpenseForm({
       onSubmit,
     });
 
+  const {
+    categoryOptions,
+    isAddCategoryOpen,
+    closeAddCategory,
+    handleCategoryChange,
+    submitNewCategory,
+    isCreating,
+    createError,
+  } = useCategories({
+    onCategorySelected: (name) => handleChange("category", name),
+  });
+
   const formStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -39,10 +52,8 @@ export function ExpenseForm({
     marginTop: "0.5rem",
   };
 
-  const categoryOptions = EXPENSE_CATEGORIES.map((category) => ({
-    value: category,
-    label: category,
-  }));
+  // BONUS-001: Get today's local date string formatted as YYYY-MM-DD
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <form onSubmit={handleSubmit} style={formStyle}>
@@ -73,7 +84,7 @@ export function ExpenseForm({
         label="Category"
         options={categoryOptions}
         value={formData.category}
-        onChange={(e) => handleChange("category", e.target.value)}
+        onChange={(e) => handleCategoryChange(e.target.value)}
         error={errors.category}
         fullWidth
         required
@@ -82,33 +93,41 @@ export function ExpenseForm({
       <TextField
         label="Date"
         type="date"
-        value={formData.date}
-        onChange={(e) => handleChange("date", e.target.value)}
+        value={formData.date || todayStr} 
+        onChange={(e) => {
+          const selectedDate = e.target.value;
+          handleChange("date", selectedDate);
+          
+          if (selectedDate > todayStr) {
+            errors.date = "Expense date cannot be in the future";
+          } else {
+            errors.date = undefined;
+          }
+        }}
         error={errors.date}
+        max={todayStr} 
         fullWidth
         required
       />
 
       <div style={buttonGroupStyle}>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isSubmitting}
-          fullWidth
-        >
+        <Button type="submit" variant="primary" disabled={isSubmitting} fullWidth>
           {isSubmitting ? "Submitting..." : submitLabel}
         </Button>
         {onCancel && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
         )}
       </div>
+
+      <AddCategoryModal
+        isOpen={isAddCategoryOpen}
+        onClose={closeAddCategory}
+        onSubmit={submitNewCategory}
+        isSubmitting={isCreating}
+        error={createError}
+      />
     </form>
   );
 }
